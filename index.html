@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Coach de chant</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:light dark;--bg:light-dark(#ffffff,#0e1626);--ink:light-dark(#14213d,#eef2fb);--soft:light-dark(#e8f0fd,#182540);--line:light-dark(#d5def0,#2a3a5c);--acc:#ff6b4a;--acc2:light-dark(#2f6fde,#7fb0ff);--mut:light-dark(#55627d,#a9b5cf)}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Inter,system-ui,sans-serif;overflow-x:clip}
+h1,h2,h3{font-family:Outfit,system-ui,sans-serif;line-height:1.1;margin:0 0 .4em;text-wrap:balance}
+h1{font-size:clamp(28px,6vw,40px)}h2{font-size:22px}h3{font-size:17px}
+.band{padding:clamp(20px,4vw,48px) max(5vw,16px);max-width:900px;margin:0 auto}
+.tabs{display:flex;gap:6px;overflow-x:auto;padding:4px 0 14px}
+.tabs button{flex:none}
+button,select{font:600 16px Inter,sans-serif;min-height:44px;padding:0 16px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer}
+button:focus-visible,select:focus-visible{outline:3px solid var(--acc2);outline-offset:2px}
+button.on,.tabs button[aria-selected=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+button.go{background:var(--acc);border-color:var(--acc);color:#fff}
+.panel[hidden]{display:none}
+.stage{background:var(--soft);border-radius:24px;padding:20px;display:grid;justify-items:center;gap:12px;text-align:center}
+.belly{width:min(70vw,260px);aspect-ratio:1;border-radius:50%;display:grid;place-items:center;
+ background:radial-gradient(circle at 35% 30%,#ffb19f,var(--acc) 60%,#d9472b);box-shadow:0 18px 40px -18px #d9472b;
+ transform:scale(.6);transition:transform 1s ease-in-out}
+.belly b{font:700 clamp(36px,10vw,56px) Outfit,sans-serif;color:#fff}
+.phase{font:700 24px Outfit,sans-serif}
+.hint{color:var(--mut);max-width:42ch;margin:0}
+.row{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-items:center}
+.card{border:1.5px solid var(--line);border-radius:18px;padding:16px 18px;margin-top:14px}
+.card ol,.card ul{margin:.3em 0 0;padding-left:1.2em}.card li{margin:.35em 0}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;width:100%}
+.stats div{background:var(--bg);border-radius:14px;padding:10px}
+.stats b{display:block;font:700 22px Outfit,sans-serif;white-space:nowrap}
+.stats span{font-size:13px;color:var(--mut)}
+.keys{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;width:100%}
+.keys button{padding:0 4px}
+.note{font:700 clamp(56px,16vw,96px) Outfit,sans-serif;line-height:1;transition:color .2s}
+.note.ok{color:#2fb67c}
+.meter{width:100%;max-width:420px;height:14px;border-radius:7px;background:linear-gradient(90deg,var(--acc) 0 30%,#2fb67c 42% 58%,var(--acc) 70%);position:relative}
+.meter i{position:absolute;top:-6px;width:4px;height:26px;margin-left:-2px;border-radius:2px;background:var(--ink);left:50%;transition:left .12s}
+.small{font-size:13px;color:var(--mut)}
+@media(prefers-reduced-motion:reduce){.belly{transition:none}}
+</style>
+</head>
+<body>
+<div class="band">
+  <h1>Coach de chant</h1>
+  <p class="hint" style="margin-bottom:12px">Respiration, justesse, régularité : 10 minutes par jour suffisent pour progresser.</p>
+  <div class="tabs" role="tablist">
+    <button role="tab" aria-selected="true" data-t="souffle">Souffle</button>
+    <button role="tab" aria-selected="false" data-t="notes">Notes et gammes</button>
+    <button role="tab" aria-selected="false" data-t="justesse">Justesse au micro</button>
+    <button role="tab" aria-selected="false" data-t="comprendre">Comprendre</button>
+  </div>
+
+  <section class="panel" id="souffle">
+    <div class="stage">
+      <div class="row" id="modes"></div>
+      <div class="belly" id="belly"><b id="count">–</b></div>
+      <div class="phase" id="phase">Prêt ?</div>
+      <p class="hint" id="instr">Choisis un exercice puis appuie sur Démarrer.</p>
+      <div class="row"><button class="go" id="start">Démarrer</button><button id="stop">Arrêter</button></div>
+      <div class="stats">
+        <div><b id="sBest">0 s</b><span>meilleur « sss »</span></div>
+        <div><b id="sLast">0 s</b><span>dernier « sss »</span></div>
+        <div><b id="sDays">0</b><span>séances</span></div>
+      </div>
+    </div>
+    <div class="card" id="modeTip"></div>
+  </section>
+
+  <section class="panel" id="notes" hidden>
+    <div class="stage">
+      <div class="row">
+        <label class="small" for="voice">Ta voix</label>
+        <select id="voice"><option value="0">Grave (homme)</option><option value="12">Aiguë (femme)</option></select>
+      </div>
+      <div class="keys" id="keys"></div>
+      <h3 style="margin-top:8px">Gamme do-ré-mi-fa-sol-fa-mi-ré-do</h3>
+      <div class="row">
+        <button id="down">− ½ ton</button><b id="tonic" style="min-width:5ch">Do</b><button id="up">+ ½ ton</button>
+      </div>
+      <div class="row"><button class="go" id="scale">Jouer la gamme</button><button id="scaleRep">Jouer puis chanter</button></div>
+      <p class="hint" id="scaleMsg">Écoute, puis chante sur « mi » ou « ma ». Monte d'un demi-ton à chaque répétition, tant que c'est confortable.</p>
+    </div>
+  </section>
+
+  <section class="panel" id="justesse" hidden>
+    <div class="stage">
+      <div class="row">
+        <label class="small" for="target">Note cible</label>
+        <select id="target"><option value="">Libre</option></select>
+        <button id="playTarget">Écouter la cible</button>
+      </div>
+      <div class="note" id="pNote">–</div>
+      <div class="small" id="pHz">Chante une note tenue sur « a »</div>
+      <div class="meter"><i id="needle"></i></div>
+      <div class="small" id="meterLbl">trop bas · juste · trop haut</div>
+      <div class="row"><button class="go" id="mic">Activer le micro</button><button id="micStop" hidden>Couper le micro</button></div>
+      <p class="hint" id="micMsg">Utilise des écouteurs si tu joues la note cible en même temps, pour que le micro n'entende que ta voix.</p>
+    </div>
+    <div class="card"><h3>Comment s'en servir</h3>
+      <ol>
+        <li>Choisis une note cible (ou laisse « Libre »), écoute-la.</li>
+        <li>Chante-la sur « a », bien tenue, 3 à 5 secondes.</li>
+        <li>L'aiguille au centre et la note en vert : tu es juste (à ±15 cents près).</li>
+      </ol>
+      <p class="small">Un demi-ton = 100 cents. Débutant, être à ±30 cents est déjà un bon début.</p>
+    </div>
+  </section>
+
+  <section class="panel" id="comprendre" hidden>
+    <div class="card"><h2>La respiration ventrale, simplement</h2>
+      <p>Quand tu inspires, c'est le <b>diaphragme</b> (un muscle en forme de dôme sous les poumons) qui descend. En descendant, il pousse les organes vers l'avant : c'est pour ça que le <b>ventre gonfle</b>. Les épaules et le haut de la poitrine, eux, ne bougent presque pas.</p>
+      <p>Pour le chant, l'enjeu n'est pas tant d'inspirer beaucoup que de <b>laisser sortir l'air lentement et régulièrement</b> : c'est ce qu'entraîne l'exercice « sss ».</p></div>
+    <div class="card"><h3>Le test pour sentir si tu y es</h3>
+      <ol>
+        <li>Allonge-toi sur le dos, genoux pliés, un livre posé sur le nombril.</li>
+        <li>Inspire par le nez : le livre doit monter, la poitrine rester calme.</li>
+        <li>Expire en « sss » : le livre redescend doucement, sans à-coup.</li>
+        <li>Debout ensuite : une main sur le ventre, l'autre sur la poitrine. Seule la main du bas bouge.</li>
+      </ol></div>
+    <div class="card"><h3>Erreurs fréquentes du débutant</h3>
+      <ul>
+        <li>Lever les épaules en inspirant : signe d'une respiration haute.</li>
+        <li>Rentrer le ventre en inspirant (respiration « inversée ») : très courant, ça se corrige allongé.</li>
+        <li>Gonfler à fond : 70 % suffisent, sinon tu te crispes.</li>
+        <li>Pousser l'air en chantant : on dose, on ne force pas.</li>
+      </ul></div>
+    <div class="card"><h3>Programme conseillé (10 min/jour)</h3>
+      <ol><li>3 min « Découverte », allongé les premiers jours.</li><li>3 essais « sss » : note ton record.</li><li>1 série « Coups de ventre ».</li><li>3 min de gammes en montant d'un demi-ton.</li><li>2 min de justesse au micro sur les notes de la gamme.</li></ol>
+      <p class="small">Si tu as des vertiges, arrête et respire normalement. Un cours avec un professeur reste le meilleur moyen de vérifier ta posture.</p></div>
+  </section>
+</div>
+
+<script>
+{
+const $=id=>document.getElementById(id);
+const store={get(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('.tabs button').forEach(x=>x.setAttribute('aria-selected',x===b));
+  document.querySelectorAll('.panel').forEach(p=>p.hidden=p.id!==b.dataset.t);
+});
+
+// ---- Souffle
+const MODES={
+  decouverte:{nom:'Découverte',steps:[['Inspire',4,'Par le nez, le ventre gonfle.',1],['Bloque',2,'Sans crisper la gorge.',1],['Expire',6,'Par la bouche, le ventre se vide doucement.',.6]],cycles:6,
+    tip:'<h3>Découverte</h3>Le rythme 4-2-6 installe le geste. Fais-le allongé les premiers jours, une main sur le ventre. Les épaules ne bougent pas.'},
+  sss:{nom:'Sifflement « sss »',steps:[['Inspire',4,'Ventre qui gonfle, sans lever les épaules.',1],['Sss…',0,'Souffle un « sss » très régulier. Appuie sur Fini quand tu n\'as plus d\'air.',.6]],cycles:1,
+    tip:'<h3>Sifflement « sss »</h3>L\'exercice roi du chanteur : il apprend à <b>doser</b> l\'air. Garde le ventre gonflé le plus longtemps possible, le son doit rester égal du début à la fin. Débutant : 15 à 20 s ; avec l\'entraînement on dépasse 40 s.'},
+  coups:{nom:'Coups de ventre',steps:[['Inspire',3,'Ventre gonflé.',1],['Ts ! ts ! ts !',6,'Petits « ts » secs : à chaque son, le ventre rentre d\'un coup.',.75]],cycles:4,
+    tip:'<h3>Coups de ventre</h3>Prononce « ts » ou « k » de façon brève et sonore. Mets la main sous le nombril : tu dois sentir un petit rebond à chaque son. C\'est ce soutien qui donnera de la tenue à ta voix.'}
+};
+let mode='decouverte',timer=null,sssStart=0;
+const stats=store.get('chant-stats',{best:0,last:0,n:0});
+const showStats=()=>{$('sBest').textContent=stats.best.toFixed(1)+' s';$('sLast').textContent=stats.last.toFixed(1)+' s';$('sDays').textContent=stats.n};
+showStats();
+$('modes').innerHTML=Object.entries(MODES).map(([k,m])=>`<button data-m="${k}">${m.nom}</button>`).join('');
+const pickMode=k=>{mode=k;document.querySelectorAll('#modes button').forEach(b=>b.classList.toggle('on',b.dataset.m===k));$('modeTip').innerHTML=MODES[k].tip;stop()};
+$('modes').onclick=e=>{const b=e.target.closest('button');if(b)pickMode(b.dataset.m)};
+const belly=s=>$('belly').style.transform=`scale(${s})`;
+function stop(){clearInterval(timer);timer=null;belly(.6);$('count').textContent='–';$('phase').textContent='Prêt ?';$('instr').textContent='Appuie sur Démarrer.';$('stop').textContent='Arrêter';sssStart=0}
+function start(){
+  stop();stats.n++;store.set('chant-stats',stats);showStats();
+  const m=MODES[mode];let cycle=0,si=0,left=0;
+  const enter=()=>{const [ph,d,txt,sc]=m.steps[si];left=d;$('phase').textContent=ph;$('instr').textContent=txt;belly(sc);
+    $('belly').style.transitionDuration=(d||8)+'s';
+    if(d===0){sssStart=performance.now();$('stop').textContent='Fini !'}$('count').textContent=d||'0';};
+  enter();
+  timer=setInterval(()=>{
+    if(sssStart){$('count').textContent=Math.floor((performance.now()-sssStart)/1000);return}
+    left--; if(left>0){$('count').textContent=left;return}
+    si++; if(si>=m.steps.length){si=0;cycle++; if(cycle>=m.cycles){stop();$('phase').textContent='Bravo !';$('instr').textContent='Série terminée. Respire normalement quelques secondes.';return}}
+    enter();
+  },1000);
+}
+$('start').onclick=start;
+$('stop').onclick=()=>{
+  if(sssStart){const t=(performance.now()-sssStart)/1000;stats.last=t;if(t>stats.best)stats.best=t;store.set('chant-stats',stats);showStats();
+    const msg=t>=stats.best?'Nouveau record !':'Bien joué.';stop();$('phase').textContent=t.toFixed(1)+' s';$('instr').textContent=msg+' Repose-toi 30 s avant le prochain essai.';return}
+  stop();
+};
+pickMode('decouverte');
+
+// ---- Notes
+let ctx=null;const ac=()=>ctx||(ctx=new (window.AudioContext||window.webkitAudioContext)());
+const NAMES=['Do','Do♯','Ré','Ré♯','Mi','Fa','Fa♯','Sol','Sol♯','La','La♯','Si'];
+const freq=midi=>440*2**((midi-69)/12);
+const nameOf=m=>NAMES[((m%12)+12)%12]+(Math.floor(m/12)-1);
+function tone(midi,t0,dur){const c=ac(),o=c.createOscillator(),g=c.createGain(),o2=c.createOscillator(),g2=c.createGain();
+  o.type='triangle';o.frequency.value=freq(midi);o2.type='sine';o2.frequency.value=freq(midi)*2;g2.gain.value=.25;
+  o2.connect(g2).connect(g);o.connect(g).connect(c.destination);
+  g.gain.setValueAtTime(0,t0);g.gain.linearRampToValueAtTime(.35,t0+.04);g.gain.setValueAtTime(.35,t0+dur-.12);g.gain.linearRampToValueAtTime(0,t0+dur);
+  o.start(t0);o2.start(t0);o.stop(t0+dur);o2.stop(t0+dur);}
+const base=()=>48+ +$('voice').value;
+const KEYS=[0,2,4,5,7,9,11,12];
+$('keys').innerHTML=KEYS.map(k=>`<button data-k="${k}">${NAMES[k%12]}${k===12?' ↑':''}</button>`).join('');
+$('keys').onclick=e=>{const b=e.target.closest('button');if(!b)return;try{const c=ac();c.resume();tone(base()+ +b.dataset.k,c.currentTime+.02,1.2)}catch(err){}};
+let tr=store.get('chant-tr',0);
+const showTr=()=>$('tonic').textContent=NAMES[((tr%12)+12)%12];showTr();
+$('up').onclick=()=>{if(tr<7)tr++;store.set('chant-tr',tr);showTr()};
+$('down').onclick=()=>{if(tr>-7)tr--;store.set('chant-tr',tr);showTr()};
+function playScale(withGap){try{const c=ac();c.resume();const t=c.currentTime+.05,d=.5;const seq=[0,2,4,5,7,5,4,2,0];
+  seq.forEach((s,i)=>tone(base()+tr+s,t+i*d,d*.95));
+  if(withGap){$('scaleMsg').textContent='À toi ! Chante la gamme maintenant…';setTimeout(()=>$('scaleMsg').textContent='La note de départ revient pour vérifier.',seq.length*d*2000+300);
+    tone(base()+tr,t+seq.length*d*2+.2,1)}}catch(err){$('scaleMsg').textContent='Le son n\'a pas pu démarrer sur cet appareil.'}}
+$('scale').onclick=()=>playScale(false);$('scaleRep').onclick=()=>playScale(true);
+
+// ---- Justesse
+const fillTargets=()=>{const b=base(),sel=$('target'),cur=sel.value;
+  sel.innerHTML='<option value="">Libre</option>'+[0,2,4,5,7,9,11,12].map(k=>`<option value="${b+k}">${nameOf(b+k)}</option>`).join('');
+  if([...sel.options].some(o=>o.value===cur))sel.value=cur};
+fillTargets();$('voice').addEventListener('change',fillTargets);
+$('playTarget').onclick=()=>{const v=$('target').value;if(!v)return;try{const c=ac();c.resume();tone(+v,c.currentTime+.02,1.5)}catch(e){}};
+
+let stream=null,raf=0,hist=[];
+function stopMic(){cancelAnimationFrame(raf);if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;hist=[];
+  $('mic').hidden=false;$('micStop').hidden=true;$('pNote').textContent='–';$('pNote').classList.remove('ok');$('needle').style.left='50%';$('pHz').textContent='Chante une note tenue sur « a »'}
+$('micStop').onclick=()=>{stopMic();$('micMsg').textContent='Micro coupé.'};
+$('mic').onclick=async()=>{
+  try{
+    if(!navigator.mediaDevices?.getUserMedia)throw new Error('none');
+    const c=ac();await c.resume();
+    stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+    const src=c.createMediaStreamSource(stream),an=c.createAnalyser();an.fftSize=4096;src.connect(an);
+    const buf=new Float32Array(an.fftSize);$('mic').hidden=true;$('micStop').hidden=false;
+    $('micMsg').textContent='Micro actif. Tiens une voyelle quelques secondes.';
+    let silent=0;
+    const loop=()=>{an.getFloatTimeDomainData(buf);const f=detect(buf,c.sampleRate);
+      if(f>65&&f<1100){silent=0;const m=69+12*Math.log2(f/440);hist.push(m);if(hist.length>7)hist.shift();
+        const med=[...hist].sort((a,b)=>a-b)[hist.length>>1];
+        const t=$('target').value,ref=t?+t:Math.round(med),cents=Math.round((med-ref)*100);
+        $('pNote').textContent=nameOf(Math.round(med));
+        $('pNote').classList.toggle('ok',Math.abs(cents)<=15&&(!t||Math.round(med)===ref));
+        $('pHz').textContent=f.toFixed(0)+' Hz · '+(cents>0?'+':'')+cents+' cents'+(t?' par rapport à '+nameOf(ref):'');
+        $('needle').style.left=Math.max(0,Math.min(100,50+cents/2*(t?1:2)))+'%';
+        $('meterLbl').textContent=t?'trop bas · '+nameOf(ref)+' · trop haut':'trop bas · juste · trop haut';
+      }else if(++silent>20){hist=[];$('pNote').classList.remove('ok')}
+      raf=requestAnimationFrame(loop)};loop();
+  }catch(err){stopMic();
+    $('micMsg').textContent=err&&err.name==='NotAllowedError'
+      ?'Accès au micro refusé. Autorise le micro pour ce site dans les réglages du navigateur (icône à gauche de l\'adresse), puis réessaie.'
+      :'Impossible d\'ouvrir le micro sur cet appareil. Essaie avec Chrome ou Safari à jour.'}
+};
+// Détection de hauteur : autocorrélation normalisée (méthode type McLeod) + interpolation
+function detect(b,sr){const n=b.length;let rms=0;for(let i=0;i<n;i++)rms+=b[i]*b[i];if(Math.sqrt(rms/n)<.01)return -1;
+  const W=n>>1,minL=Math.floor(sr/1100),maxL=Math.min(W,Math.ceil(sr/65)),nsdf=new Float32Array(maxL+2);
+  for(let lag=minL;lag<=maxL;lag++){let ac=0,m=0;for(let i=0;i<W;i++){const x=b[i],y=b[i+lag];ac+=x*y;m+=x*x+y*y}nsdf[lag]=m?2*ac/m:0}
+  let max=0;for(let l=minL;l<=maxL;l++)if(nsdf[l]>max)max=nsdf[l];if(max<.5)return -1;
+  for(let l=minL+1;l<maxL;l++){if(nsdf[l]>=.9*max&&nsdf[l]>=nsdf[l-1]&&nsdf[l]>=nsdf[l+1]){
+    const a=nsdf[l-1],c0=nsdf[l],d=nsdf[l+1],den=a-2*c0+d,sh=den?.5*(a-d)/den:0;return sr/(l+sh)}}
+  return -1}
+}
+</script>
+</body>
+</html>
